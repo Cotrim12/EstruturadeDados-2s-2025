@@ -41,7 +41,7 @@ int main(int argc, char **argv){
     printf("8) Processos com indigenas: %zu\n", contar_flag(&L, "flag_indigenas"));
     printf("9) Processos com infancia/juventude: %zu\n", contar_flag(&L, "flag_infancia"));
 
-    printf("10) Dias entre dt_recebimento e dt_resolvido (amostra até 10 linhas):\n");
+    printf("10) Dias entre dt_recebimento e dt_resolvido (amostra ate 10 linhas):\n");
     int shown = 0;
     for(size_t i=0;i<L.n && shown < 10;i++){
         long dias = dias_entre_recebimento_resolvido(&L.arr[i]);
