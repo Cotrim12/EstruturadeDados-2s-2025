@@ -16,7 +16,7 @@ int main(){
      // Construindo o encandeamento D,E,F,G,H
 
      D->Anterior = NULL;
-     D->Posterior = E;
+     D->Posterior = F;
 
      E->Anterior = D;
      E->Posterior = F;
@@ -29,6 +29,8 @@ int main(){
 
      H->Anterior = G;
      H->Posterior = NULL;
+
+     
 
      // Criando uma lista
 
