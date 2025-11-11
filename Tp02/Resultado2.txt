@@ -1,6 +1,0 @@
-Tamanho da estrada: 20
-Número de cidades: 4
-Menor vizinhança: 3.50
-Cidade com menor vizinhança: L’pur
-
-Você acertou 2 de 2 testes.
