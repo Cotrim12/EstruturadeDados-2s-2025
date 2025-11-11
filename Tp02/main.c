@@ -9,13 +9,10 @@ int main () {
 int Soma = 0;
 
 int NumTeste = 0;
-
 FILE *Resposta = fopen("Resultado.txt", "w");
-
 Estrada *T1 = getEstrada("Teste01.txt");
 double D1 = calcularMenorVizinhanca("Teste01.txt");
 char *C1 = cidadeMenorVizinhanca("Teste01.txt");
-
 if (T1->T == 10) Soma++;
 NumTeste++;
 
@@ -28,5 +25,5 @@ NumTeste++;
 if (strcmp(C1, "Birnin Zana")==0) Soma++;
 NumTeste++;
 
-fprintf(Resposta, "ATENÇÃO: Você acertou %d de %d itens. Logo, em 1.50 pontos, sua nota foi %.2f.\n", Soma, NumTeste, 2.0 * (float)Soma/(float)NumTeste);
+fprintf(Resposta, "\nATENÇÃO: Você acertou %d de %d itens. Logo, em 1.50 pontos, sua nota foi %.2f.\n", Soma, NumTeste, 2.0 * (float)Soma/(float)NumTeste);
 }

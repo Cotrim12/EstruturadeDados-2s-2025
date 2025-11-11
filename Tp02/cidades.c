@@ -1,28 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include "cidades.h"
 
 #define MAX_NOME 256
 
-// Funções auxiliares (internas)
+// Funções auxiliares simples (sem ctype.h)
 static void trim_trailing(char *s) {
     int len = (int)strlen(s);
-    while (len > 0 && (s[len-1] == '\n' || s[len-1] == '\r' || isspace((unsigned char)s[len-1]))) {
-        s[len-1] = '\0';
-        --len;
+    while (len > 0 && (s[len - 1] == '\n' || s[len - 1] == '\r' || s[len - 1] == ' ' || s[len - 1] == '\t')) {
+        s[len - 1] = '\0';
+        len--;
     }
 }
+
 static void ltrim(char *s) {
     int i = 0, j = 0;
-    while (s[i] && isspace((unsigned char)s[i])) i++;
+    while (s[i] == ' ' || s[i] == '\t') i++;
     if (i > 0) {
         while (s[i]) s[j++] = s[i++];
         s[j] = '\0';
     }
 }
 
+// Libera memória da estrada e das cidades
 static void freeEstrada(Estrada *e) {
     if (!e) return;
     Cidade *p = e->Inicio;
@@ -34,162 +35,166 @@ static void freeEstrada(Estrada *e) {
     free(e);
 }
 
+// -----------------------------------------------------
+// 1. Lê o arquivo e cria a estrutura da estrada
+// -----------------------------------------------------
 Estrada *getEstrada(const char *nomeArquivo) {
     if (nomeArquivo == NULL) return NULL;
 
     FILE *fp = fopen(nomeArquivo, "r");
     if (!fp) return NULL;
 
-    char line[1024];
-    long T;
-    long N;
+    char linha[1024];
+    long T, N;
 
-    // Ler T
+    // Lê T (comprimento da estrada)
     do {
-        if (!fgets(line, sizeof(line), fp)) { fclose(fp); return NULL; }
-        trim_trailing(line);
-    } while (line[0] == '\0'); // pular linhas em branco
-    if (sscanf(line, "%ld", &T) != 1) { fclose(fp); return NULL; }
+        if (!fgets(linha, sizeof(linha), fp)) { fclose(fp); return NULL; }
+        trim_trailing(linha);
+    } while (linha[0] == '\0');
+    if (sscanf(linha, "%ld", &T) != 1) { fclose(fp); return NULL; }
 
-    // Ler N
+    // Lê N (número de cidades)
     do {
-        if (!fgets(line, sizeof(line), fp)) { fclose(fp); return NULL; }
-        trim_trailing(line);
-    } while (line[0] == '\0');
-    if (sscanf(line, "%ld", &N) != 1) { fclose(fp); return NULL; }
+        if (!fgets(linha, sizeof(linha), fp)) { fclose(fp); return NULL; }
+        trim_trailing(linha);
+    } while (linha[0] == '\0');
+    if (sscanf(linha, "%ld", &N) != 1) { fclose(fp); return NULL; }
 
-    // Validar restrições iniciais
+    // Valida restrições
     if (T < 3 || T > 1000000L || N < 2 || N > 10000L) {
         fclose(fp);
         return NULL;
     }
 
-    // Vetor temporário para checar duplicatas
-    int *positions = (int*) malloc(sizeof(int) * (size_t)N);
-    if (!positions) { fclose(fp); return NULL; }
-    int readCount = 0;
+    int *posicoes = (int *)malloc(sizeof(int) * (size_t)N);
+    if (!posicoes) { fclose(fp); return NULL; }
 
-    Estrada *estrada = (Estrada*) malloc(sizeof(Estrada));
-    if (!estrada) { free(positions); fclose(fp); return NULL; }
+    Estrada *estrada = (Estrada *)malloc(sizeof(Estrada));
+    if (!estrada) { free(posicoes); fclose(fp); return NULL; }
     estrada->N = (int)N;
     estrada->T = (int)T;
     estrada->Inicio = NULL;
 
-    Cidade *last = NULL;
-    // Ler N linhas com Xi e nome
-    for (int i = 0; i < (int)N; ++i) {
-        if (!fgets(line, sizeof(line), fp)) {
-            // Arquivo com menos linhas que o declarado -> erro
+    Cidade *ultima = NULL;
+    int lidas = 0;
+
+    // Lê cada cidade
+    for (int i = 0; i < (int)N; i++) {
+        if (!fgets(linha, sizeof(linha), fp)) {
             freeEstrada(estrada);
-            free(positions);
+            free(posicoes);
             fclose(fp);
             return NULL;
         }
-        trim_trailing(line);
-        // Pular linhas em branco (se houver)
-        if (line[0] == '\0') { i--; continue; }
+        trim_trailing(linha);
+        if (linha[0] == '\0') { i--; continue; }
 
         int xi;
         char nome[MAX_NOME];
-        // ler inteiro e resto da linha como nome (com espaços)
-        // usar "%d %[^\n]" para pegar o nome com espaços
-        int matched = sscanf(line, "%d %[^\n]", &xi, nome);
-        if (matched < 1) {
+        int ok = sscanf(linha, "%d %[^\n]", &xi, nome);
+        if (ok < 2) {
             freeEstrada(estrada);
-            free(positions);
+            free(posicoes);
             fclose(fp);
             return NULL;
         }
-        if (matched == 1) {
-            // não havia nome (apenas posicao) -> erro
-            freeEstrada(estrada);
-            free(positions);
-            fclose(fp);
-            return NULL;
-        }
+
         trim_trailing(nome);
         ltrim(nome);
 
-        // validar Xi
+        // Valida posição
         if (!(xi > 0 && xi < estrada->T)) {
             freeEstrada(estrada);
-            free(positions);
+            free(posicoes);
             fclose(fp);
             return NULL;
         }
-        // checar duplicata
-        for (int j = 0; j < readCount; ++j) {
-            if (positions[j] == xi) {
+
+        // Verifica duplicata
+        for (int j = 0; j < lidas; j++) {
+            if (posicoes[j] == xi) {
                 freeEstrada(estrada);
-                free(positions);
+                free(posicoes);
                 fclose(fp);
                 return NULL;
             }
         }
-        positions[readCount++] = xi;
+        posicoes[lidas++] = xi;
 
-        // criar nodo Cidade e anexar ao fim (ordem de leitura)
-        Cidade *c = (Cidade*) malloc(sizeof(Cidade));
+        // Cria cidade
+        Cidade *c = (Cidade *)malloc(sizeof(Cidade));
         if (!c) {
             freeEstrada(estrada);
-            free(positions);
+            free(posicoes);
             fclose(fp);
             return NULL;
         }
-        c->Posicao = xi;
-        c->Proximo = NULL;
-        // copiar nome com segurança
-        strncpy(c->Nome, nome, MAX_NOME-1);
-        c->Nome[MAX_NOME-1] = '\0';
 
-        if (estrada->Inicio == NULL) {
+        c->Posicao = xi;
+        strncpy(c->Nome, nome, MAX_NOME - 1);
+        c->Nome[MAX_NOME - 1] = '\0';
+        c->Proximo = NULL;
+
+        if (estrada->Inicio == NULL)
             estrada->Inicio = c;
-            last = c;
-        } else {
-            last->Proximo = c;
-            last = c;
-        }
+        else
+            ultima->Proximo = c;
+
+        ultima = c;
     }
 
-    free(positions);
+    free(posicoes);
     fclose(fp);
     return estrada;
 }
 
+// -----------------------------------------------------
+// 2. Calcula o menor comprimento de vizinhança
+// -----------------------------------------------------
 double calcularMenorVizinhanca(const char *nomeArquivo) {
     Estrada *e = getEstrada(nomeArquivo);
-    if (!e) return -1.0; // sinal de erro (a especificação só exige getEstrada retornar NULL)
+    if (!e) return -1.0;
+
     int n = e->N;
     int T = e->T;
-    if (n <= 0) { freeEstrada(e); return -1.0; }
 
-    // Colocar ponteiros em array para ordenar por posição
-    Cidade **arr = (Cidade**) malloc(sizeof(Cidade*) * (size_t)n);
+    Cidade **arr = (Cidade **)malloc(sizeof(Cidade *) * (size_t)n);
     if (!arr) { freeEstrada(e); return -1.0; }
+
     Cidade *p = e->Inicio;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; i++) {
         arr[i] = p;
-        if (p) p = p->Proximo;
+        p = p->Proximo;
     }
 
-    // ordenar por Posicao
-    int cmp(const void *a, const void *b) {
-        Cidade *A = *(Cidade**)a;
-        Cidade *B = *(Cidade**)b;
-        return (A->Posicao - B->Posicao);
+    // Ordena por posição (insertion sort simples)
+    for (int i = 1; i < n; i++) {
+        Cidade *temp = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j]->Posicao > temp->Posicao) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = temp;
     }
-    qsort(arr, (size_t)n, sizeof(Cidade*), cmp);
 
-    // calcular vizinhanças
     double menor = -1.0;
-    for (int i = 0; i < n; ++i) {
-        double left, right;
-        if (i == 0) left = 0.0;
-        else left = (arr[i-1]->Posicao + arr[i]->Posicao) / 2.0;
-        if (i == n-1) right = (double) T;
-        else right = (arr[i]->Posicao + arr[i+1]->Posicao) / 2.0;
-        double len = right - left;
-        if (menor < 0 || len < menor) menor = len;
+    for (int i = 0; i < n; i++) {
+        double esquerda, direita;
+        if (i == 0)
+            esquerda = 0.0;
+        else
+            esquerda = (arr[i - 1]->Posicao + arr[i]->Posicao) / 2.0;
+
+        if (i == n - 1)
+            direita = (double)T;
+        else
+            direita = (arr[i]->Posicao + arr[i + 1]->Posicao) / 2.0;
+
+        double tamanho = direita - esquerda;
+        if (menor < 0 || tamanho < menor)
+            menor = tamanho;
     }
 
     free(arr);
@@ -197,54 +202,67 @@ double calcularMenorVizinhanca(const char *nomeArquivo) {
     return menor;
 }
 
+// -----------------------------------------------------
+// 3. Retorna o nome da cidade com menor vizinhança
+// -----------------------------------------------------
 char *cidadeMenorVizinhanca(const char *nomeArquivo) {
     Estrada *e = getEstrada(nomeArquivo);
     if (!e) return NULL;
+
     int n = e->N;
     int T = e->T;
-    if (n <= 0) { freeEstrada(e); return NULL; }
 
-    // Colocar ponteiros em array para ordenar por posição
-    Cidade **arr = (Cidade**) malloc(sizeof(Cidade*) * (size_t)n);
+    Cidade **arr = (Cidade **)malloc(sizeof(Cidade *) * (size_t)n);
     if (!arr) { freeEstrada(e); return NULL; }
+
     Cidade *p = e->Inicio;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; i++) {
         arr[i] = p;
-        if (p) p = p->Proximo;
+        p = p->Proximo;
     }
 
-    int cmp(const void *a, const void *b) {
-        Cidade *A = *(Cidade**)a;
-        Cidade *B = *(Cidade**)b;
-        return (A->Posicao - B->Posicao);
+    // Ordena por posição
+    for (int i = 1; i < n; i++) {
+        Cidade *temp = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j]->Posicao > temp->Posicao) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = temp;
     }
-    qsort(arr, (size_t)n, sizeof(Cidade*), cmp);
 
     double menor = -1.0;
-    int idxMenor = 0;
-    for (int i = 0; i < n; ++i) {
-        double left, right;
-        if (i == 0) left = 0.0;
-        else left = (arr[i-1]->Posicao + arr[i]->Posicao) / 2.0;
-        if (i == n-1) right = (double) T;
-        else right = (arr[i]->Posicao + arr[i+1]->Posicao) / 2.0;
-        double len = right - left;
-        if (menor < 0 || len < menor) {
-            menor = len;
-            idxMenor = i;
+    int indice = 0;
+
+    for (int i = 0; i < n; i++) {
+        double esquerda, direita;
+        if (i == 0)
+            esquerda = 0.0;
+        else
+            esquerda = (arr[i - 1]->Posicao + arr[i]->Posicao) / 2.0;
+
+        if (i == n - 1)
+            direita = (double)T;
+        else
+            direita = (arr[i]->Posicao + arr[i + 1]->Posicao) / 2.0;
+
+        double tamanho = direita - esquerda;
+        if (menor < 0 || tamanho < menor) {
+            menor = tamanho;
+            indice = i;
         }
     }
 
-    // Alocar e retornar o nome (cópia)
-    char *res = (char*) malloc((strlen(arr[idxMenor]->Nome) + 1) * sizeof(char));
-    if (!res) {
+    char *resposta = (char *)malloc(strlen(arr[indice]->Nome) + 1);
+    if (!resposta) {
         free(arr);
         freeEstrada(e);
         return NULL;
     }
-    strcpy(res, arr[idxMenor]->Nome);
 
+    strcpy(resposta, arr[indice]->Nome);
     free(arr);
     freeEstrada(e);
-    return res;
+    return resposta;
 }
