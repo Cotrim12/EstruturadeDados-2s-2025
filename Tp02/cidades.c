@@ -5,7 +5,6 @@
 
 #define MAX_NOME 256
 
- Funções auxiliares simples (sem ctype.h)
 static void trim_trailing(char *s) {
     int len = (int)strlen(s);
     while (len > 0 && (s[len - 1] == '\n' || s[len - 1] == '\r' || s[len - 1] == ' ' || s[len - 1] == '\t')) {
@@ -23,7 +22,7 @@ static void ltrim(char *s) {
     }
 }
 
- Libera memória da estrada e das cidades
+
 static void freeEstrada(Estrada *e) {
     if (!e) return;
     Cidade *p = e->Inicio;
@@ -45,21 +44,21 @@ Estrada *getEstrada(const char *nomeArquivo) {
     char linha[1024];
     long T, N;
 
-     Lê T (comprimento da estrada)
+
     do {
         if (!fgets(linha, sizeof(linha), fp)) { fclose(fp); return NULL; }
         trim_trailing(linha);
     } while (linha[0] == '\0');
     if (sscanf(linha, "%ld", &T) != 1) { fclose(fp); return NULL; }
 
-     Lê N (número de cidades)
+    
     do {
         if (!fgets(linha, sizeof(linha), fp)) { fclose(fp); return NULL; }
         trim_trailing(linha);
     } while (linha[0] == '\0');
     if (sscanf(linha, "%ld", &N) != 1) { fclose(fp); return NULL; }
 
-     Valida restrições
+   
     if (T < 3 || T > 1000000L || N < 2 || N > 10000L) {
         fclose(fp);
         return NULL;
@@ -77,7 +76,7 @@ Estrada *getEstrada(const char *nomeArquivo) {
     Cidade *ultima = NULL;
     int lidas = 0;
 
-     Lê cada cidade
+    
     for (int i = 0; i < (int)N; i++) {
         if (!fgets(linha, sizeof(linha), fp)) {
             freeEstrada(estrada);
@@ -101,7 +100,7 @@ Estrada *getEstrada(const char *nomeArquivo) {
         trim_trailing(nome);
         ltrim(nome);
 
-         Valida posição
+       
         if (!(xi > 0 && xi < estrada->T)) {
             freeEstrada(estrada);
             free(posicoes);
@@ -109,7 +108,7 @@ Estrada *getEstrada(const char *nomeArquivo) {
             return NULL;
         }
 
-         Verifica duplicata
+        
         for (int j = 0; j < lidas; j++) {
             if (posicoes[j] == xi) {
                 freeEstrada(estrada);
@@ -120,7 +119,7 @@ Estrada *getEstrada(const char *nomeArquivo) {
         }
         posicoes[lidas++] = xi;
 
-         Cria cidade
+    
         Cidade *c = (Cidade *)malloc(sizeof(Cidade));
         if (!c) {
             freeEstrada(estrada);
@@ -164,7 +163,6 @@ double calcularMenorVizinhanca(const char *nomeArquivo) {
         p = p->Proximo;
     }
 
-     Ordena por posição (insertion sort simples)
     for (int i = 1; i < n; i++) {
         Cidade *temp = arr[i];
         int j = i - 1;
@@ -215,7 +213,7 @@ char *cidadeMenorVizinhanca(const char *nomeArquivo) {
         p = p->Proximo;
     }
 
-     Ordena por posição
+     
     for (int i = 1; i < n; i++) {
         Cidade *temp = arr[i];
         int j = i - 1;
