@@ -35,9 +35,7 @@ static void freeEstrada(Estrada *e) {
     free(e);
 }
 
- -----------------------------------------------------
- 1. Lê o arquivo e cria a estrutura da estrada
- -----------------------------------------------------
+
 Estrada *getEstrada(const char *nomeArquivo) {
     if (nomeArquivo == NULL) return NULL;
 
@@ -149,9 +147,7 @@ Estrada *getEstrada(const char *nomeArquivo) {
     return estrada;
 }
 
- -----------------------------------------------------
- 2. Calcula o menor comprimento de vizinhança
- -----------------------------------------------------
+
 double calcularMenorVizinhanca(const char *nomeArquivo) {
     Estrada *e = getEstrada(nomeArquivo);
     if (!e) return -1.0;
@@ -202,9 +198,7 @@ double calcularMenorVizinhanca(const char *nomeArquivo) {
     return menor;
 }
 
- -----------------------------------------------------
- 3. Retorna o nome da cidade com menor vizinhança
- -----------------------------------------------------
+
 char *cidadeMenorVizinhanca(const char *nomeArquivo) {
     Estrada *e = getEstrada(nomeArquivo);
     if (!e) return NULL;
